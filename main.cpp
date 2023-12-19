@@ -8,6 +8,7 @@ private:
 	T* _elements;
 	int _size;
 	int _capacity;
+	static double _precision;
 
 public:
 	// Конструктор по умолчанию пустое мно-во
@@ -36,6 +37,34 @@ public:
 		}
 	}
 
+	bool operator==(const UniqueSet<T>& other) const {
+		if (std::is_floating_point<T>::value) {
+			// Если T - вещественный тип, сравниваем с учетом точности
+			if (_size != other._size) return false;
+			for (int i = 0; i < _size; ++i) {
+				if (std::abs(_elements[i] - other._elements[i]) >= _precision) {
+					return false;
+				}
+			}
+			return true;
+		}
+		else {
+			// Для других типов данных, просто сравниваем элементы
+			if (_size != other._size) return false;
+			for (int i = 0; i < _size; ++i) {
+				if (_elements[i] != other._elements[i]) {
+					return false;
+				}
+			}
+			return true;
+		}
+	}
+
+	// Перегрузка оператора !=
+	bool operator!=(const UniqueSet<T>& other) const {
+		return !(*this == other);
+	}
+
 	// Оператор присваивания
 	UniqueSet<T>& operator=(const UniqueSet<T>& other) {
 		if (this != &other) {
@@ -43,6 +72,7 @@ public:
 			_elements = nullptr;
 			_size = 0;
 			_capacity = 0;
+			this->resize(other._size);
 			for (int i = 0; i < other._size; ++i) {
 				insert(other._elements[i]);
 			}
@@ -56,6 +86,11 @@ public:
 		_elements = nullptr;
 		_size = 0;
 		_capacity = 0;
+	}
+
+	// Сеттер для точности сравнения вещ. чисел
+	static void set_precision(double value) {
+		_precision = value;
 	}
 
 	size_t get_size() {
@@ -75,6 +110,7 @@ public:
 	// Оператор объединения множеств
 	UniqueSet<T> operator+(const UniqueSet<T>& other) const {
 		UniqueSet<T> result = *this;
+		result.resize(abs(this->_size + other._size));
 		for (int i = 0; i < other._size; ++i) {
 			result.insert(other._elements[i]);
 		}
@@ -84,6 +120,7 @@ public:
 	// Оператор разности множеств
 	UniqueSet<T> operator-(const UniqueSet<T>& other) const {
 		UniqueSet<T> result;
+		result.resize(abs(this->_size - other._size));
 		for (int i = 0; i < _size; ++i) {
 			if (!other.contains(_elements[i])) {
 				result.insert(_elements[i]);
@@ -95,6 +132,7 @@ public:
 	// Оператор сложения множества с числом
 	UniqueSet<T> operator+(const T& value) const {
 		UniqueSet<T> result = *this;
+		result.resize(1);
 		result.insert(value);
 		return result;
 	}
@@ -109,6 +147,7 @@ public:
 	// Вычисление пересечения двух множеств
 	UniqueSet<T> intersection(const UniqueSet<T>& other) const {
 		UniqueSet<T> result;
+		result.resize(abs(this->_size - other._size));
 		for (int i = 0; i < _size; ++i) {
 			if (other.contains(_elements[i])) {
 				result.insert(_elements[i]);
@@ -150,7 +189,7 @@ public:
 		}
 	}
 
-	// Вспомогательная функция для увеличения размера массива
+	// Вспомогательная функция для увеличения вместимости множества
 	void resize(const int& add) {
 		int newCapacity = _capacity + add;
 		T* newElements = new T[newCapacity];
@@ -171,7 +210,8 @@ public:
 	}
 };
 
-std::ostream& operator<<(std::ostream& os, std::pair<int, double> p) {
+template <typename T1, typename T2>
+std::ostream& operator<<(std::ostream& os, std::pair<T1, T2> p) {
 	os << "(" << p.first << ", " << p.second << ")";
 	return os;
 }
@@ -188,13 +228,17 @@ bool allElementsIn(UniqueSet<T>& sbj, const UniqueSet<T>& obj) {
 	return true;
 }
 
+template <typename T>
+double UniqueSet<T>::_precision = 1e-6;
+
 int main() {
+	UniqueSet<double>::set_precision(1e-5);
 	int intValues1[] = { 1, 2, 3, 4, 5 };
-	int intValues2[] = { 1, 2, 3, 4, 5, 6, 7 };
+	int intValues2[] = { 1, 2, 3, 4, 5, 6, 7, 7 };
 	double floatValues1[] = { 1.5, 1.7, 2.5, 0.9, 5.7, 9.3 };
 	double floatValues2[] = { 1.5, 1.7, 2.5, 0.9 };
 	std::string strValues1[] = { "str1", "str2", "str3" };
-	std::string strValues2[] = { "str1", "str2", "str4", "str5" };
+	std::string strValues2[] = { "str1", "str2", "str3", "str5" };
 	std::pair<int, double> pairValues1[] = { std::make_pair(5, 5.5), std::make_pair(2, 2.25) };
 	std::pair<int, double> pairValues2[] = { std::make_pair(2, 2.25), std::make_pair(3, 3.35), std::make_pair(5, 5.5) };
 
@@ -212,42 +256,46 @@ int main() {
 	std::cout << "intSet2: ";
 	intSet2.display();
 	std::cout << std::endl;
+	UniqueSet<int> intUnionSet = intSet1 + intSet2;
+	std::cout << "Union: ";
+	intUnionSet.display();
+	UniqueSet<int> intDifferenceSet = intSet2 - intSet1;
+	std::cout << "Difference: ";
+	intDifferenceSet.display();
+	UniqueSet<int> intIntersectionSet = intSet1.intersection(intSet2);
+	std::cout << "Intersection: ";
+	intIntersectionSet.display();
+	std::cout << "All elements of intSet1 are in intSet2: " << allElementsIn(intSet1, intSet2) << std::endl;
+	std::cout << "All elements of intSet2 are in intSet1: " << allElementsIn(intSet2, intSet1) << std::endl;
+	std::cout << std::endl << std::endl;
+
+
 	std::cout << "floatSet1: ";
 	floatSet1.display();
 	std::cout << "floatSet2: ";
 	floatSet2.display();
 	std::cout << std::endl;
+	std::cout << "floatSet1 != floatSet2: " << (floatSet1 != floatSet2) << std::endl;
+	std::cout << "All elements of floatSet1 are in floatSet2: " << allElementsIn(floatSet1, floatSet2) << std::endl;
+	std::cout << std::endl << std::endl;
+
+
 	std::cout << "strSet1: ";
 	strSet1.display();
 	std::cout << "strSet2: ";
 	strSet2.display();
 	std::cout << std::endl;
-	std::cout << "strSet1: ";
-	strSet1.display();
-	std::cout << "strSet2: ";
-	strSet2.display();
-	std::cout << std::endl;
+	std::cout << "All elements of strSet1 are in strSet2: " << allElementsIn(strSet1, strSet2) << std::endl;
+	std::cout << std::endl << std::endl;
+
+
 	std::cout << "pairSet1: ";
 	pairSet1.display();
 	std::cout << "pairSet2: ";
 	pairSet2.display();
 	std::cout << std::endl;
-
-	UniqueSet<int> unionSet = intSet1 + intSet2;
-	std::cout << "Union: ";
-	unionSet.display();
-
-	UniqueSet<int> differenceSet = intSet2 - intSet1;
-	std::cout << "Difference: ";
-	differenceSet.display();
-
-	UniqueSet<int> intersectionSet = intSet1.intersection(intSet2);
-	std::cout << "Intersection: ";
-	intersectionSet.display();
-
-	std::cout << "All elements of intSet1 are in intSet2: " << allElementsIn(intSet1, intSet2) << std::endl;
-	std::cout << "All elements of intSet2 are in intSet1: " << allElementsIn(intSet2, intSet1) << std::endl;
 	std::cout << "All elements of pairSet1 are in pairSet2: " << allElementsIn(pairSet1, pairSet2) << std::endl;
+	std::cout << std::endl << std::endl;
 
 	return 0;
 }
