@@ -14,7 +14,7 @@ public:
 	// Конструктор по умолчанию пустое мно-во
 	UniqueSet() : _elements(nullptr), _size(0), _capacity(0) {}
 
-	// Конструктор с параметрами из другого мн-ва
+	// Конструктор с параметрами из массива
 	UniqueSet(const T* values, int count) : _elements(nullptr), _size(0), _capacity(0) {
 		for (int i = 0; i < count; ++i) {
 			insert(values[i]);
@@ -229,6 +229,14 @@ bool allElementsIn(UniqueSet<T>& sbj, const UniqueSet<T>& obj) {
 }
 
 template <typename T>
+bool allElementsIn(const T* sbj, const size_t sbj_size, const T* obj, const size_t obj_size) {
+	UniqueSet<T> u_sbj(sbj, sbj_size);
+	UniqueSet<T> u_obj(obj, obj_size);
+
+	return allElementsIn(u_sbj, u_obj);
+}
+
+template <typename T>
 double UniqueSet<T>::_precision = 1e-6;
 
 int main() {
@@ -267,6 +275,8 @@ int main() {
 	intIntersectionSet.display();
 	std::cout << "All elements of intSet1 are in intSet2: " << allElementsIn(intSet1, intSet2) << std::endl;
 	std::cout << "All elements of intSet2 are in intSet1: " << allElementsIn(intSet2, intSet1) << std::endl;
+	std::cout << "All elements of intValues1 are in intValues2: " << allElementsIn(intSet1, intSet2) << std::endl;
+	std::cout << "All elements of intValues2 are in intValues1: " << allElementsIn(intSet2, intSet1) << std::endl;
 	std::cout << std::endl << std::endl;
 
 
